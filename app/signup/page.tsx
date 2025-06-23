@@ -27,6 +27,16 @@ export default function SignUpPage() {
 
   const router = useRouter()
 
+  const handleGoogleSignIn = async () => {
+    try {
+      await signIn("google", {
+        callbackUrl: "/dashboard",
+      });
+    } catch (err) {
+      setError("Failed to sign in with Google")
+    }
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     const { name, username, email, password, confirmPassword, agreeToTerms } = formData
@@ -198,7 +208,7 @@ export default function SignUpPage() {
                 <Button
                   variant="outline"
                   className="w-full h-12 bg-white hover:bg-gray-100 text-gray-900 border-0 font-medium"
-                  onClick={() => signIn("google", { callbackUrl: "/dashboard" })}
+                  onClick={handleGoogleSignIn}
                 >
                   <svg className="w-5 h-5 mr-3" viewBox="0 0 24 24">
                     <path
