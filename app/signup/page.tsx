@@ -9,19 +9,94 @@ import { Label } from "@/components/ui/label"
 import { Separator } from "@/components/ui/separator"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Globe, ArrowLeft, Zap, Layout, Palette } from "lucide-react"
+import { signIn } from "next-auth/react"
+import { useRouter } from "next/navigation"
+import axios from "axios"
 
 export default function SignUpPage() {
   const [formData, setFormData] = useState({
-    firstName: "",
-    lastName: "",
+    name: "",
+    username: "",
     email: "",
     password: "",
     confirmPassword: "",
     agreeToTerms: false,
   })
+  const [error, setError] = useState<string | null>(null)
+  const [isLoading, setIsLoading] = useState(false)
+
+  const router = useRouter()
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    const { name, username, email, password, confirmPassword, agreeToTerms } = formData
+    
+    // Reset error state
+    setError(null)
+
+    // Validation
+    if (!name || !username || !email || !password || !confirmPassword) {
+      setError("Please fill in all fields.")
+      return
+    }
+    if (password !== confirmPassword) {
+      setError("Passwords do not match.")
+      return
+    }
+    if (password.length < 8) {
+      setError("Password must be at least 8 characters long.")
+      return
+    }
+    if (!agreeToTerms) {
+      setError("You must agree to the terms and conditions.")
+      return
+    }
+
+    try {
+      setIsLoading(true)
+      
+      // Make API call to register user
+      const response = await axios.post('/api/auth/register', {
+        name,
+        username,
+        email,
+        password
+      })
+
+      // If registration is successful, sign in the user
+      const signInResult = await signIn('credentials', {
+        email,
+        password,
+        redirect: false
+      })
+
+      if (signInResult?.error) {
+        setError(signInResult.error)
+      } else {
+        router.push('/dashboard')
+      }
+    } catch (err: any) {
+      // Handle different error cases
+      if (axios.isAxiosError(err)) {
+        if (err.response?.data?.error) {
+          setError(err.response.data.error)
+        } else if (err.response?.data?.message) {
+          setError(err.response.data.message)
+        } else {
+          setError('An error occurred during registration.')
+        }
+      } else {
+        setError('An unexpected error occurred.')
+      }
+    } finally {
+      setIsLoading(false)
+    }
+  }
 
   const handleInputChange = (field: string, value: string | boolean) => {
     setFormData((prev) => ({ ...prev, [field]: value }))
+    // Clear error when user starts typing
+    if (error) setError(null)
   }
 
   return (
@@ -114,10 +189,16 @@ export default function SignUpPage() {
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
+                {error && (
+                  <div className="p-3 bg-red-500/10 border border-red-500 rounded-lg text-red-300 text-sm">
+                    {error}
+                  </div>
+                )}
+                
                 <Button
                   variant="outline"
                   className="w-full h-12 bg-white hover:bg-gray-100 text-gray-900 border-0 font-medium"
-                  onClick={() => (window.location.href = "/dashboard")}
+                  onClick={() => signIn("google", { callbackUrl: "/dashboard" })}
                 >
                   <svg className="w-5 h-5 mr-3" viewBox="0 0 24 24">
                     <path
@@ -149,101 +230,105 @@ export default function SignUpPage() {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="firstName" className="text-gray-300">
-                      First Name
+                <form onSubmit={handleSubmit}>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="name" className="text-gray-300">
+                        Name
+                      </Label>
+                      <Input
+                        id="name"
+                        placeholder="John Doe"
+                        value={formData.name}
+                        onChange={(e) => handleInputChange("name", e.target.value)}
+                        className="h-11 bg-white/10 border-gray-600 text-white placeholder:text-gray-400 focus:border-gray-400 focus:ring-gray-400/20"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="username" className="text-gray-300">
+                        Username
+                      </Label>
+                      <Input
+                        id="username"
+                        placeholder="johndoe23"
+                        value={formData.username}
+                        onChange={(e) => handleInputChange("username", e.target.value)}
+                        className="h-11 bg-white/10 border-gray-600 text-white placeholder:text-gray-400 focus:border-gray-400 focus:ring-gray-400/20"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-2 mt-4">
+                    <Label htmlFor="email" className="text-gray-300">
+                      Email
                     </Label>
                     <Input
-                      id="firstName"
-                      placeholder="John"
-                      value={formData.firstName}
-                      onChange={(e) => handleInputChange("firstName", e.target.value)}
+                      id="email"
+                      type="email"
+                      placeholder="john@example.com"
+                      value={formData.email}
+                      onChange={(e) => handleInputChange("email", e.target.value)}
                       className="h-11 bg-white/10 border-gray-600 text-white placeholder:text-gray-400 focus:border-gray-400 focus:ring-gray-400/20"
                     />
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="lastName" className="text-gray-300">
-                      Last Name
+
+                  <div className="space-y-2 mt-4">
+                    <Label htmlFor="password" className="text-gray-300">
+                      Password
                     </Label>
                     <Input
-                      id="lastName"
-                      placeholder="Doe"
-                      value={formData.lastName}
-                      onChange={(e) => handleInputChange("lastName", e.target.value)}
+                      id="password"
+                      type="password"
+                      placeholder="Create a strong password"
+                      value={formData.password}
+                      onChange={(e) => handleInputChange("password", e.target.value)}
                       className="h-11 bg-white/10 border-gray-600 text-white placeholder:text-gray-400 focus:border-gray-400 focus:ring-gray-400/20"
                     />
                   </div>
-                </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="email" className="text-gray-300">
-                    Email
-                  </Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    placeholder="john@example.com"
-                    value={formData.email}
-                    onChange={(e) => handleInputChange("email", e.target.value)}
-                    className="h-11 bg-white/10 border-gray-600 text-white placeholder:text-gray-400 focus:border-gray-400 focus:ring-gray-400/20"
-                  />
-                </div>
+                  <div className="space-y-2 mt-4">
+                    <Label htmlFor="confirmPassword" className="text-gray-300">
+                      Confirm Password
+                    </Label>
+                    <Input
+                      id="confirmPassword"
+                      type="password"
+                      placeholder="Confirm your password"
+                      value={formData.confirmPassword}
+                      onChange={(e) => handleInputChange("confirmPassword", e.target.value)}
+                      className="h-11 bg-white/10 border-gray-600 text-white placeholder:text-gray-400 focus:border-gray-400 focus:ring-gray-400/20"
+                    />
+                  </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="password" className="text-gray-300">
-                    Password
-                  </Label>
-                  <Input
-                    id="password"
-                    type="password"
-                    placeholder="Create a strong password"
-                    value={formData.password}
-                    onChange={(e) => handleInputChange("password", e.target.value)}
-                    className="h-11 bg-white/10 border-gray-600 text-white placeholder:text-gray-400 focus:border-gray-400 focus:ring-gray-400/20"
-                  />
-                </div>
+                  <div className="flex items-start space-x-3 mt-6">
+                    <Checkbox
+                      id="terms"
+                      checked={formData.agreeToTerms}
+                      onCheckedChange={(checked) => handleInputChange("agreeToTerms", checked as boolean)}
+                      className="border-gray-500 data-[state=checked]:bg-gray-700 data-[state=checked]:border-gray-600"
+                    />
+                    <Label htmlFor="terms" className="text-sm text-gray-300 leading-relaxed">
+                      I agree to the{" "}
+                      <Link href="#" className="text-white hover:text-gray-300 underline">
+                        Terms of Service
+                      </Link>{" "}
+                      and{" "}
+                      <Link href="#" className="text-white hover:text-gray-300 underline">
+                        Privacy Policy
+                      </Link>
+                    </Label>
+                  </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="confirmPassword" className="text-gray-300">
-                    Confirm Password
-                  </Label>
-                  <Input
-                    id="confirmPassword"
-                    type="password"
-                    placeholder="Confirm your password"
-                    value={formData.confirmPassword}
-                    onChange={(e) => handleInputChange("confirmPassword", e.target.value)}
-                    className="h-11 bg-white/10 border-gray-600 text-white placeholder:text-gray-400 focus:border-gray-400 focus:ring-gray-400/20"
-                  />
-                </div>
-
-                <div className="flex items-start space-x-3">
-                  <Checkbox
-                    id="terms"
-                    checked={formData.agreeToTerms}
-                    onCheckedChange={(checked) => handleInputChange("agreeToTerms", checked as boolean)}
-                    className="border-gray-500 data-[state=checked]:bg-gray-700 data-[state=checked]:border-gray-600"
-                  />
-                  <Label htmlFor="terms" className="text-sm text-gray-300 leading-relaxed">
-                    I agree to the{" "}
-                    <Link href="#" className="text-white hover:text-gray-300 underline">
-                      Terms of Service
-                    </Link>{" "}
-                    and{" "}
-                    <Link href="#" className="text-white hover:text-gray-300 underline">
-                      Privacy Policy
-                    </Link>
-                  </Label>
-                </div>
+                  <Button
+                    type="submit"
+                    className="w-full h-12 mt-6 bg-gradient-to-r from-gray-800 to-black hover:from-gray-700 hover:to-gray-900 text-white font-semibold shadow-lg border border-gray-600"
+                    disabled={isLoading}
+                  >
+                    {isLoading ? "Creating account..." : "Create Account →"}
+                  </Button>
+                </form>
               </CardContent>
               <CardFooter className="flex flex-col space-y-4 pt-6">
-                <Button
-                  className="w-full h-12 bg-gradient-to-r from-gray-800 to-black hover:from-gray-700 hover:to-gray-900 text-white font-semibold shadow-lg border border-gray-600"
-                  onClick={() => (window.location.href = "/dashboard")}
-                >
-                  Create Account →
-                </Button>
                 <div className="text-center text-sm text-gray-400">
                   Already have an account?{" "}
                   <Link href="/" className="text-white hover:text-gray-300 font-medium hover:underline">

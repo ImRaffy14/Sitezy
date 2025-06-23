@@ -2,9 +2,19 @@ import { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { compare } from "bcryptjs";
 import { prisma } from "@/lib/prisma";
+import GoogleProvider from "next-auth/providers/google";
+import { PrismaAdapter } from "@next-auth/prisma-adapter";
 
 export const authOptions: NextAuthOptions = {
+  adapter: PrismaAdapter(prisma),
   providers: [
+    // Google OAuth provider
+    GoogleProvider({
+      clientId: process.env.GOOGLE_CLIENT_ID!,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+    }),
+
+    // Credentials provider for email/password login
     CredentialsProvider({
       name: "Credentials",
       credentials: {
@@ -23,6 +33,11 @@ export const authOptions: NextAuthOptions = {
 
         if (!user) {
           console.log("No user found");
+          return null;
+        }
+
+        if (!user.password) {
+          console.log("User has no password set");
           return null;
         }
 
