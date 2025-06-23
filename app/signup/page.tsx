@@ -83,7 +83,8 @@ export default function SignUpPage() {
       if (signInResult?.error) {
         setError(signInResult.error)
       } else {
-        router.push('/dashboard')
+        console.log(response.data)
+        router.push('/dashboard/' + response.data.data.username)
       }
     } catch (err: any) {
       // Handle different error cases
