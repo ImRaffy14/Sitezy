@@ -58,7 +58,6 @@ export const authOptions: NextAuthOptions = {
           });
           return "/completeCredentials?email=" + encodeURIComponent(user.email!);
         } else {
-
           return `/dashboard/${existingUser.username}`;
         }
       }

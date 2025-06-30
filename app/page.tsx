@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Separator } from "@/components/ui/separator"
 import { Globe, Sparkles, Zap, Star, Rocket, Users, Shield } from "lucide-react"
+import { signIn } from "next-auth/react"
 
 export default function LoginPage() {
   const [email, setEmail] = useState("")
@@ -119,7 +120,7 @@ export default function LoginPage() {
                 <Button
                   variant="outline"
                   className="w-full h-12 bg-white hover:bg-gray-100 text-gray-900 border-0 font-medium"
-                  onClick={() => (window.location.href = "/dashboard")}
+                  onClick={() => signIn("google", { callbackUrl: "/dashboard" })}
                 >
                   <svg className="w-5 h-5 mr-3" viewBox="0 0 24 24">
                     <path

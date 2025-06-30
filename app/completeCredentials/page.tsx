@@ -61,14 +61,13 @@ export default function CompleteCredentialsPage() {
     try {
       setIsLoading(true)
       
-      // Make API call to complete registration
       const response = await axios.post('/api/users/update', {
         email,
         username,
       })
 
       // Redirect to dashboard after successful completion
-      router.push('/dashboard')
+      router.push(`/dashboard/${response.data.username}`)
     } catch (err: any) {
       setIsLoading(false)
       if (axios.isAxiosError(err)) {

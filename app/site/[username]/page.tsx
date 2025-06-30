@@ -2,131 +2,14 @@
 
 import { useSearchParams } from "next/navigation"
 import { useEffect, useState } from "react"
+import axios from "axios"
 import { LayoutRenderer } from "@/components/layout-renderer"
 
-// Mock database - In real app, this would come from your database
-const mockUserDatabase = {
-  johndoe: {
-    id: "johndoe",
-    name: "Alex Johnson",
-    title: "Full Stack Developer & UI/UX Designer",
-    bio: "Passionate about creating beautiful, functional digital experiences. I love turning complex problems into simple, elegant solutions.",
-    email: "alex@example.com",
-    phone: "+1 (555) 123-4567",
-    location: "San Francisco, CA",
-    profilePicture: "",
-    bannerImage: "",
-    // Social links
-    website: "https://alexjohnson.dev",
-    linkedin: "https://linkedin.com/in/alexjohnson",
-    github: "https://github.com/alexjohnson",
-    twitter: "https://x.com/alexjohnson",
-    instagram: "https://instagram.com/alexjohnson",
-    youtube: "https://youtube.com/@alexjohnson",
-    behance: "https://behance.net/alexjohnson",
-    dribbble: "https://dribbble.com/alexjohnson",
-    medium: "https://medium.com/@alexjohnson",
-    spotify: "https://open.spotify.com/user/alexjohnson",
-    // Layout and theme preferences
-    selectedLayout: "modern",
-    selectedTheme: "professional",
-    customColors: {
-      primary: "#2563eb",
-      secondary: "#64748b",
-      background: "#ffffff",
-      text: "#1e293b",
-      accent: "#0ea5e9",
-    },
-  },
-  janedoe: {
-    id: "janedoe",
-    name: "Jane Smith",
-    title: "Digital Artist & Creative Director",
-    bio: "Creating visual stories that inspire and connect. Specializing in brand identity, illustration, and digital art.",
-    email: "jane@example.com",
-    phone: "+1 (555) 987-6543",
-    location: "New York, NY",
-    profilePicture: "",
-    bannerImage: "",
-    // Social links
-    website: "https://janesmith.art",
-    instagram: "https://instagram.com/janesmithart",
-    behance: "https://behance.net/janesmith",
-    dribbble: "https://dribbble.com/janesmith",
-    etsy: "https://etsy.com/shop/janesmithart",
-    patreon: "https://patreon.com/janesmith",
-    // Layout and theme preferences
-    selectedLayout: "creative",
-    selectedTheme: "artist",
-    customColors: {
-      primary: "#be185d",
-      secondary: "#6b7280",
-      background: "#ffffff",
-      text: "#1f2937",
-      accent: "#7c3aed",
-    },
-  },
-  mikegamer: {
-    id: "mikegamer",
-    name: "Mike Chen",
-    title: "Pro Gamer & Streamer",
-    bio: "Competitive esports player and content creator. Streaming daily on Twitch and creating gaming content.",
-    email: "mike@example.com",
-    phone: "",
-    location: "Los Angeles, CA",
-    profilePicture: "",
-    bannerImage: "",
-    // Social links
-    twitch: "https://twitch.tv/mikegamer",
-    youtube: "https://youtube.com/@mikegamer",
-    discord: "https://discord.gg/mikegamer",
-    twitter: "https://x.com/mikegamer",
-    instagram: "https://instagram.com/mikegamer",
-    // Layout and theme preferences
-    selectedLayout: "modern",
-    selectedTheme: "gamer",
-    customColors: {
-      primary: "#10b981",
-      secondary: "#6b7280",
-      background: "#0f172a",
-      text: "#f1f5f9",
-      accent: "#06ffa5",
-    },
-  },
-  sarahbiz: {
-    id: "sarahbiz",
-    name: "Sarah Williams",
-    title: "Business Consultant & Entrepreneur",
-    bio: "Helping startups and small businesses grow through strategic planning and digital transformation.",
-    email: "sarah@example.com",
-    phone: "+1 (555) 456-7890",
-    location: "Austin, TX",
-    profilePicture: "",
-    bannerImage: "",
-    // Social links
-    website: "https://sarahwilliams.biz",
-    linkedin: "https://linkedin.com/in/sarahwilliams",
-    twitter: "https://x.com/sarahbiz",
-    medium: "https://medium.com/@sarahwilliams",
-    // Layout and theme preferences
-    selectedLayout: "professional",
-    selectedTheme: "business",
-    customColors: {
-      primary: "#059669",
-      secondary: "#6b7280",
-      background: "#ffffff",
-      text: "#1f2937",
-      accent: "#dc2626",
-    },
-  },
-}
-
-// Default user data
 const defaultUserData = {
-  name: "Alex Johnson",
+  name: "",
   title: "",
   bio: "",
-  email: "alex@example.com",
+  email: "",
   phone: "",
   location: "",
   profilePicture: "",
@@ -134,12 +17,13 @@ const defaultUserData = {
   selectedLayout: "modern",
   selectedTheme: "professional",
   customColors: {
-    primary: "#3b82f6",
+    primary: "#2563eb",
     secondary: "#64748b",
     background: "#ffffff",
-    text: "#1f2937",
-    accent: "#f59e0b",
+    text: "#1e293b",
+    accent: "#0ea5e9",
   },
+  // ...other social fields as needed...
 }
 
 const themes = {
@@ -208,51 +92,52 @@ export default function PersonalWebsite({ params }: { params: { username: string
   const [colors, setColors] = useState(themes.professional)
 
   useEffect(() => {
-    // Get user data from mock database
-    const dbUser = mockUserDatabase[params.username as keyof typeof mockUserDatabase]
+    const fetchProfile = async () => {
+      try {
+        const res = await axios.post("/api/users", { username: params.username })
+        const profile = res.data
+        if (profile) {
+          setUserData(profile)
+          setLayout(profile.selectedLayout || "modern")
+          setColors(profile.customColors || themes.professional)
+        }
+      } catch (e) {
+        setUserData(defaultUserData)
+        setLayout("modern")
+        setColors(themes.professional)
+      }
+    }
+    fetchProfile()
+  }, [params.username])
 
-    // URL parameters override database values (for live preview)
+  // URL params for live preview (optional)
+  useEffect(() => {
     const layoutParam = searchParams.get("layout")
     const themeParam = searchParams.get("theme")
     const colorsParam = searchParams.get("colors")
     const profileParam = searchParams.get("profile")
 
-    // Start with database user or default
-    let finalUserData = dbUser ? { ...dbUser } : { ...defaultUserData }
-    let finalLayout = dbUser?.selectedLayout || "modern"
-    let finalColors = dbUser?.customColors || themes.professional
+    let finalUserData = { ...userData }
+    let finalLayout = layout
+    let finalColors = colors
 
-    // Override with URL parameters if present (for live preview)
     if (profileParam) {
       try {
         const parsedProfile = JSON.parse(decodeURIComponent(profileParam))
         finalUserData = { ...finalUserData, ...parsedProfile }
-      } catch (e) {
-        console.error("Failed to parse profile:", e)
-      }
+      } catch (e) {}
     }
-
-    if (layoutParam) {
-      finalLayout = layoutParam
-    }
-
-    if (themeParam && themes[themeParam as keyof typeof themes]) {
-      finalColors = themes[themeParam as keyof typeof themes]
-    }
-
+    if (layoutParam) finalLayout = layoutParam
+    if (themeParam && themes[themeParam as keyof typeof themes]) finalColors = themes[themeParam as keyof typeof themes]
     if (colorsParam) {
       try {
-        const parsedColors = JSON.parse(decodeURIComponent(colorsParam))
-        finalColors = parsedColors
-      } catch (e) {
-        console.error("Failed to parse colors:", e)
-      }
+        finalColors = JSON.parse(decodeURIComponent(colorsParam))
+      } catch (e) {}
     }
-
     setUserData(finalUserData)
     setLayout(finalLayout)
     setColors(finalColors)
-  }, [searchParams, params.username])
+  }, [searchParams])
 
   return <LayoutRenderer layout={layout} userData={userData} colors={colors} />
 }

@@ -20,6 +20,7 @@ model User {
   updatedAt      DateTime  @updatedAt
   accounts       Account[]
   sessions       Session[]
+  profile        UserProfile?
 }
 
 model Account {
@@ -63,4 +64,67 @@ model VerificationToken {
   updatedAt  DateTime @updatedAt
 
   @@unique([identifier, token])
+}
+
+model UserProfile {
+  id              String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId          String   @unique @db.ObjectId
+  name            String?
+  title           String?
+  bio             String?
+  email           String?
+  location        String?
+  profilePicture  String?
+  bannerImage     String?
+  selectedLayout  String? // e.g., "minimal", "modern"
+  selectedTheme   String? // e.g., "gamer", "professional"
+  customColors    CustomColors
+
+  // PROFESSIONAL LINKS
+  behance        String?
+  dribbble       String?
+  github         String?
+  medium         String?
+  linkedin       String?
+
+  // CREATORS LINKS
+  spotify       String?
+  soundCloud     String?
+  bandCamp       String?
+  patreon       String?
+  kofi          String?
+
+  // SMALL BUSINESS LINKS
+  shopee         String?
+  lazada         String?
+  Etsy           String?
+  facebookPage String?
+  
+  // SOCIAL MEDIA LINKS
+  instagram     String?
+  twitter       String?
+  tiktok        String?
+  youtube       String?
+  discord       String?
+  twitch        String?
+  telegram      String?
+  threads       String?
+  pinterest     String?
+
+  // OTHER LINKS
+  website       String?
+  whatsApp       String?
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+type CustomColors {
+  primary    String
+  secondary  String
+  background String
+  text       String
+  accent     String
 }

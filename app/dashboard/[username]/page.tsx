@@ -1,6 +1,8 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { useParams } from "next/navigation"
+import axios from 'axios'
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -42,34 +44,33 @@ import { EnhancedImageCropper } from "@/components/enhanced-image-cropper"
 import { compressImage } from "@/utils/image-utils"
 
 export default function Dashboard() {
+  const params = useParams();
+  const username = params.username as string;
+
   const [copied, setCopied] = useState(false)
   const [profileData, setProfileData] = useState({
-    name: "Alex Johnson",
+    name: "",
     title: "",
     bio: "",
-    email: "alex@example.com",
+    email: "",
     phone: "",
     location: "",
     profilePicture: "",
     bannerImage: "",
-    // Professional/Creative
     behance: "",
     dribbble: "",
     github: "",
     medium: "",
     linkedin: "",
-    // Creators/Artists/Musicians
     spotify: "",
     soundcloud: "",
     bandcamp: "",
     patreon: "",
     kofi: "",
-    // Small Business/Sellers
     shopee: "",
     lazada: "",
     etsy: "",
     facebookPage: "",
-    // Social Media
     instagram: "",
     twitter: "",
     tiktok: "",
@@ -79,26 +80,26 @@ export default function Dashboard() {
     telegram: "",
     threads: "",
     pinterest: "",
-    // Optional Extras
     website: "",
     whatsapp: "",
   })
-
   const [selectedLayout, setSelectedLayout] = useState("modern")
   const [selectedTheme, setSelectedTheme] = useState("professional")
   const [colorSettings, setColorSettings] = useState({
-    primary: "#3b82f6",
+    primary: "#2563eb",
     secondary: "#64748b",
     background: "#ffffff",
-    text: "#1f2937",
-    accent: "#f59e0b",
+    text: "#1e293b",
+    accent: "#0ea5e9",
   })
 
   const [showCropper, setShowCropper] = useState(false)
   const [cropperImage, setCropperImage] = useState("")
   const [cropperType, setCropperType] = useState<"profile" | "banner">("profile")
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveStatus, setSaveStatus] = useState<string | null>(null);
 
-  const siteUrl = `https://sitezy.com/site/johndoe`
+  const siteUrl = `http://localhost:3000/site/${username}`
 
   const themes = [
     {
@@ -313,6 +314,25 @@ export default function Dashboard() {
     },
   ]
 
+  useEffect(() => {
+    if (!username) return;
+    const fetchProfile = async () => {
+      try {
+        const res = await axios.post('/api/users', { username });
+        const profile = res.data;
+        if (profile) {
+          setProfileData((prev) => ({ ...prev, ...profile }));
+          if (profile.selectedLayout) setSelectedLayout(profile.selectedLayout);
+          if (profile.selectedTheme) setSelectedTheme(profile.selectedTheme);
+          if (profile.customColors) setColorSettings(profile.customColors);
+        }
+      } catch (err) {
+        console.error('Failed to fetch user profile:', err);
+      }
+    };
+    fetchProfile();
+  }, [username]);
+
   const handleCopy = () => {
     navigator.clipboard.writeText(siteUrl)
     setCopied(true)
@@ -388,6 +408,34 @@ export default function Dashboard() {
     }
   }
 
+  const handleSave = async () => {
+    setIsSaving(true);
+    setSaveStatus(null);
+    try {
+      const payload = {
+        username,
+        ...profileData,
+        selectedLayout,
+        selectedTheme,
+        customColors: colorSettings,
+      };
+      await axios.post('/api/userProfile/update', payload);
+      setSaveStatus('Profile updated successfully!');
+    } catch (err) {
+      setSaveStatus('Failed to update profile.');
+      console.error(err);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  // Helper functions to update only specific sections
+  const handleProfileSave = () => handleSave();
+  const handleThemeSave = () => handleSave();
+  const handleLayoutSave = () => handleSave();
+  const handleColorsSave = () => handleSave();
+  const handleLinksSave = () => handleSave();
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-black via-gray-900 to-gray-800">
       {/* Header */}
@@ -404,7 +452,7 @@ export default function Dashboard() {
             </div>
 
             <div className="flex items-center space-x-4">
-              <Link href="/site/johndoe" target="_blank">
+              <Link href={`/site/${username}`} target="_blank">
                 <Button variant="outline" size="sm" className="border-gray-600 text-gray-300 hover:bg-gray-800">
                   <Eye className="w-4 h-4 mr-2" />
                   Preview Site
@@ -427,6 +475,10 @@ export default function Dashboard() {
           <h1 className="text-4xl font-bold text-white mb-2">Dashboard</h1>
           <p className="text-gray-300">Customize your personal website with advanced controls</p>
         </div>
+
+        {saveStatus && (
+          <div className={`mb-4 text-sm font-medium ${saveStatus.includes('success') ? 'text-green-400' : 'text-red-400'}`}>{saveStatus}</div>
+        )}
 
         <div className="grid grid-cols-1 xl:grid-cols-5 gap-8">
           {/* Main Content */}
@@ -672,6 +724,15 @@ export default function Dashboard() {
                     </Card>
                   ))}
                 </div>
+                <div className="flex justify-end mt-4">
+                  <button
+                    onClick={handleProfileSave}
+                    disabled={isSaving}
+                    className="px-6 py-2 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 disabled:opacity-50"
+                  >
+                    {isSaving ? 'Saving...' : 'Update Profile'}
+                  </button>
+                </div>
               </TabsContent>
 
               <TabsContent value="theme" className="space-y-6">
@@ -723,6 +784,15 @@ export default function Dashboard() {
                     </div>
                   </CardContent>
                 </Card>
+                <div className="flex justify-end mt-4">
+                  <button
+                    onClick={handleThemeSave}
+                    disabled={isSaving}
+                    className="px-6 py-2 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 disabled:opacity-50"
+                  >
+                    {isSaving ? 'Saving...' : 'Update Theme'}
+                  </button>
+                </div>
               </TabsContent>
 
               <TabsContent value="layout" className="space-y-6">
@@ -763,6 +833,15 @@ export default function Dashboard() {
                     </div>
                   </CardContent>
                 </Card>
+                <div className="flex justify-end mt-4">
+                  <button
+                    onClick={handleLayoutSave}
+                    disabled={isSaving}
+                    className="px-6 py-2 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 disabled:opacity-50"
+                  >
+                    {isSaving ? 'Saving...' : 'Update Layout'}
+                  </button>
+                </div>
               </TabsContent>
 
               <TabsContent value="colors" className="space-y-6">
@@ -802,6 +881,15 @@ export default function Dashboard() {
                     ))}
                   </CardContent>
                 </Card>
+                <div className="flex justify-end mt-4">
+                  <button
+                    onClick={handleColorsSave}
+                    disabled={isSaving}
+                    className="px-6 py-2 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 disabled:opacity-50"
+                  >
+                    {isSaving ? 'Saving...' : 'Update Colors'}
+                  </button>
+                </div>
               </TabsContent>
 
               <TabsContent value="share" className="space-y-6">
@@ -852,6 +940,15 @@ export default function Dashboard() {
                     </div>
                   </CardContent>
                 </Card>
+                <div className="flex justify-end mt-4">
+                  <button
+                    onClick={handleLinksSave}
+                    disabled={isSaving}
+                    className="px-6 py-2 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 disabled:opacity-50"
+                  >
+                    {isSaving ? 'Saving...' : 'Update Links'}
+                  </button>
+                </div>
               </TabsContent>
             </Tabs>
           </div>
@@ -870,7 +967,7 @@ export default function Dashboard() {
                 <CardContent>
                   <div className="aspect-[4/5] bg-gray-900 rounded-lg border border-gray-600 overflow-hidden">
                     <iframe
-                      src={`/site/johndoe?layout=${selectedLayout}&theme=${selectedTheme}&colors=${encodeURIComponent(JSON.stringify(colorSettings))}&profile=${encodeURIComponent(JSON.stringify(profileData))}`}
+                      src={`/site/${username}`}
                       className="w-full h-full"
                       style={{ transform: "scale(0.8)", transformOrigin: "top left", width: "125%", height: "125%" }}
                     />

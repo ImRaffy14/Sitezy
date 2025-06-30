@@ -56,6 +56,21 @@ export async function POST(
         createdAt: true,
       },
     });
+    
+    await prisma.userProfile.create({
+        data: {
+            userId: updatedUser.id,
+            selectedLayout: 'modern',
+            selectedTheme: 'professional',
+            customColors: {
+              primary: '#2563eb',
+              secondary: '#64748b',
+              background: '#ffffff',
+              text: '#1e293b',
+              accent: '#0ea5e9'
+            }
+        }
+    })
 
     return NextResponse.json(updatedUser, { status: 200 });
   } catch (error) {

@@ -47,6 +47,22 @@ export async function POST(req: Request) {
             }
         })
 
+        // Create empty user profile after user creation
+        await prisma.userProfile.create({
+            data: {
+                userId: user.id,
+                selectedLayout: 'modern',
+                selectedTheme: 'professional',
+                customColors: {
+                  primary: '#2563eb',
+                  secondary: '#64748b',
+                  background: '#ffffff',
+                  text: '#1e293b',
+                  accent: '#0ea5e9'
+                }
+            }
+        })
+
         return NextResponse.json(
             { data: user },
             { status: 201 }
